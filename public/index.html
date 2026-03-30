@@ -207,8 +207,21 @@
       <button class="btn btn-fetch" id="fetchBtn" onclick="fetchUrl()">取得</button>
     </div>
     <p class="hint">URLからタイトルと説明文を自動取得します。直接入力する場合はスキップしてください。</p>
-    <br>
-    <button class="btn btn-reset" onclick="showEditor()">URLなしで直接入力</button>
+    <div style="display:flex; align-items:center; gap:12px; margin-top:16px;">
+      <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+      <span style="color:#94a3b8; font-size:13px;">または</span>
+      <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+    </div>
+  </div>
+
+  <!-- テキスト貼り付け -->
+  <div class="url-section">
+    <h2>イベント情報をテキストで貼り付け</h2>
+    <div class="field" style="margin-bottom:12px;">
+      <textarea id="pasteInput" placeholder="イベントの案内文、メール本文、Webページのテキストなどをそのまま貼り付けてください。&#10;&#10;例：&#10;WEB300 Conference&#10;開催日：2026年2月2日&#10;会場：ベルサール半蔵門&#10;日本のビジネスシーンを牽引する300名が集結する完全招待制カンファレンス..." style="min-height:150px;"></textarea>
+    </div>
+    <button class="btn btn-fetch" id="pasteBtn" onclick="generateFromText()">AI生成</button>
+    <p class="hint">貼り付けたテキストからAIがタイトル・本文を自動生成します。</p>
   </div>
 
   <!-- Step 2 -->
@@ -333,6 +346,34 @@
     $('ogPreview').classList.remove('show');
     $('editSection').classList.remove('show');
     $('result').className = 'result';
+  }
+
+  async function generateFromText() {
+    const text = $('pasteInput').value.trim();
+    if (!text) return;
+
+    const btn = $('pasteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>AI生成中...';
+
+    try {
+      const aiRes = await fetch('/api/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: text })
+      });
+      const aiData = await aiRes.json();
+      if (aiData.error) throw new Error(aiData.error);
+
+      $('titleInput').value = aiData.title || '';
+      $('contentInput').value = aiData.content;
+      showEditor();
+    } catch (err) {
+      showResult(false, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'AI生成';
+    }
   }
 
   // Enterキーで取得
