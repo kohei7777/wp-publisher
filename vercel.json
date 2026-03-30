@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/fetch-url", "destination": "/api/fetch-url" },
+    { "source": "/api/generate-content", "destination": "/api/generate-content" },
+    { "source": "/api/publish", "destination": "/api/publish" }
+  ]
+}

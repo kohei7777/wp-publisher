@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WP Publisher - キープレイヤーズ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1e3a5f;
+      color: white;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    .container { max-width: 800px; margin: 32px auto; padding: 0 20px; }
+
+    /* Step 1: URL入力 */
+    .url-section {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    .url-section h2 {
+      font-size: 16px;
+      color: #1e3a5f;
+      margin-bottom: 16px;
+    }
+    .url-row {
+      display: flex;
+      gap: 10px;
+    }
+    .url-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-row input:focus { border-color: #1e3a5f; }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-fetch {
+      background: #1e3a5f;
+      color: white;
+    }
+    .btn-fetch:hover { background: #2d4f7a; }
+    .btn-fetch:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    /* Step 2: 編集 */
+    .edit-section {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+      display: none;
+    }
+    .edit-section.show { display: block; }
+    .edit-section h2 {
+      font-size: 16px;
+      color: #1e3a5f;
+      margin-bottom: 16px;
+    }
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field textarea:focus { border-color: #1e3a5f; }
+    .field textarea {
+      min-height: 200px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .og-preview {
+      margin-bottom: 18px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      display: none;
+    }
+    .og-preview img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+    }
+    .og-preview.show { display: block; }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .btn-publish {
+      background: #16a34a;
+      color: white;
+      padding: 14px 32px;
+      font-size: 16px;
+    }
+    .btn-publish:hover { background: #15803d; }
+    .btn-publish:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    .btn-reset {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+    .btn-reset:hover { background: #e2e8f0; }
+
+    /* Result */
+    .result {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      text-align: center;
+      display: none;
+    }
+    .result.show { display: block; }
+    .result.success { border-left: 4px solid #16a34a; }
+    .result.error { border-left: 4px solid #dc2626; }
+    .result h3 { font-size: 18px; margin-bottom: 12px; }
+    .result a {
+      color: #1e3a5f;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .result a:hover { text-decoration: underline; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hint {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>WP Publisher</h1>
+  <span class="badge">keyplayers.jp</span>
+</div>
+
+<div class="container">
+  <!-- Step 1 -->
+  <div class="url-section">
+    <h2>1. URLを入力</h2>
+    <div class="url-row">
+      <input type="url" id="urlInput" placeholder="https://example.com/article" />
+      <button class="btn btn-fetch" id="fetchBtn" onclick="fetchUrl()">取得</button>
+    </div>
+    <p class="hint">URLからタイトルと説明文を自動取得します。直接入力する場合はスキップしてください。</p>
+    <br>
+    <button class="btn btn-reset" onclick="showEditor()">URLなしで直接入力</button>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="edit-section" id="editSection">
+    <h2>2. 内容を確認・編集</h2>
+    <div class="og-preview" id="ogPreview">
+      <img id="ogImage" src="" alt="" />
+    </div>
+    <div class="field">
+      <label>タイトル</label>
+      <input type="text" id="titleInput" placeholder="記事のタイトル" />
+    </div>
+    <div class="field">
+      <label>本文（HTML）</label>
+      <textarea id="contentInput" placeholder="<p>記事の本文をHTMLで入力...</p>"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn btn-reset" onclick="resetAll()">リセット</button>
+      <button class="btn btn-publish" id="publishBtn" onclick="publish()">公開する</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  function showEditor() {
+    $('editSection').classList.add('show');
+  }
+
+  async function fetchUrl() {
+    const url = $('urlInput').value.trim();
+    if (!url) return;
+
+    const btn = $('fetchBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>取得中...';
+
+    try {
+      const res = await fetch('/api/fetch-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.ogImage) {
+        $('ogImage').src = data.ogImage;
+        $('ogPreview').classList.add('show');
+      }
+
+      // AIでタイトル・本文を生成
+      btn.innerHTML = '<span class="spinner"></span>AI生成中...';
+      const aiRes = await fetch('/api/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: data.title, description: data.description, url: data.url })
+      });
+      const aiData = await aiRes.json();
+      if (aiData.error) throw new Error(aiData.error);
+
+      $('titleInput').value = aiData.title || data.title || '';
+      $('contentInput').value = aiData.content;
+      showEditor();
+    } catch (err) {
+      showResult(false, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '取得';
+    }
+  }
+
+  async function publish() {
+    const title = $('titleInput').value.trim();
+    const content = $('contentInput').value.trim();
+    if (!title || !content) {
+      alert('タイトルと本文を入力してください');
+      return;
+    }
+
+    if (!confirm(`「${title}」を公開しますか？`)) return;
+
+    const btn = $('publishBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>公開中...';
+
+    try {
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showResult(true, `公開しました！<br><a href="${data.link}" target="_blank">${data.link}</a>`);
+      } else {
+        throw new Error(data.error || '公開に失敗しました');
+      }
+    } catch (err) {
+      showResult(false, err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '公開する';
+    }
+  }
+
+  function showResult(success, message) {
+    const el = $('result');
+    el.className = `result show ${success ? 'success' : 'error'}`;
+    el.innerHTML = `<h3>${success ? '公開完了' : 'エラー'}</h3><p>${message}</p>`;
+  }
+
+  function resetAll() {
+    $('urlInput').value = '';
+    $('titleInput').value = '';
+    $('contentInput').value = '';
+    $('ogPreview').classList.remove('show');
+    $('editSection').classList.remove('show');
+    $('result').className = 'result';
+  }
+
+  // Enterキーで取得
+  $('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') fetchUrl();
+  });
+</script>
+
+</body>
+</html>
