@@ -309,17 +309,29 @@
     btn.innerHTML = '<span class="spinner"></span>公開中...';
 
     try {
-      const res = await fetch('/api/publish', {
+      // サーバーから認証情報を取得
+      const configRes = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content })
+        body: JSON.stringify({})
       });
-      const data = await res.json();
+      const config = await configRes.json();
 
-      if (data.success) {
+      // ブラウザから直接WordPress APIに投稿（XSERVER WAF回避）
+      const wpRes = await fetch(config.wpUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + config.auth
+        },
+        body: JSON.stringify({ title, content, status: 'publish', categories: [config.category] })
+      });
+      const data = await wpRes.json();
+
+      if (data.id) {
         showResult(true, `公開しました！<br><a href="${data.link}" target="_blank">${data.link}</a>`);
       } else {
-        throw new Error(data.error + (data.detail ? '\n' + data.detail : ''));
+        throw new Error(data.message || '公開に失敗しました');
       }
     } catch (err) {
       showResult(false, err.message);
