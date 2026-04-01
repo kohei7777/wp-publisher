@@ -319,7 +319,7 @@
       if (data.success) {
         showResult(true, `公開しました！<br><a href="${data.link}" target="_blank">${data.link}</a>`);
       } else {
-        throw new Error(data.error || '公開に失敗しました');
+        throw new Error(data.error + (data.detail ? '\n' + data.detail : ''));
       }
     } catch (err) {
       showResult(false, err.message);
