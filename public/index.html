@@ -316,6 +316,9 @@
         body: JSON.stringify({})
       });
       const config = await configRes.json();
+      if (!config.wpUrl || !config.auth) {
+        throw new Error('認証情報の取得に失敗しました: ' + JSON.stringify(config));
+      }
 
       // ブラウザから直接WordPress APIに投稿（XSERVER WAF回避）
       const wpRes = await fetch(config.wpUrl, {
@@ -326,12 +329,19 @@
         },
         body: JSON.stringify({ title, content, status: 'publish', categories: [config.category] })
       });
-      const data = await wpRes.json();
+
+      const text = await wpRes.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('WordPress応答エラー (HTTP ' + wpRes.status + '): ' + text.substring(0, 200));
+      }
 
       if (data.id) {
         showResult(true, `公開しました！<br><a href="${data.link}" target="_blank">${data.link}</a>`);
       } else {
-        throw new Error(data.message || '公開に失敗しました');
+        throw new Error(data.message || '公開に失敗しました: ' + JSON.stringify(data));
       }
     } catch (err) {
       showResult(false, err.message);
