@@ -21,13 +21,19 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return res.status(500).json({ error: `WordPress APIエラー: レスポンスがJSONではありません (HTTP ${response.status})`, detail: text.substring(0, 500) });
+    }
     if (data.id) {
       res.json({ success: true, id: data.id, link: data.link });
     } else {
       res.status(500).json({ error: '公開に失敗しました', detail: data });
     }
   } catch (err) {
-    res.status(500).json({ error: `WordPress APIエラー: ${err.message}` });
+    res.status(500).json({ error: `WordPress APIエラー: ${err.message}`, env_check: { hasUrl: !!process.env.WP_URL, hasUser: !!process.env.WP_USER, hasPass: !!process.env.WP_APP_PASSWORD } });
   }
 }
