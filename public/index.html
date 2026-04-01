@@ -344,7 +344,7 @@
         throw new Error(data.message || '公開に失敗しました: ' + JSON.stringify(data));
       }
     } catch (err) {
-      showResult(false, err.message);
+      showResult(false, String(err && err.message ? err.message : JSON.stringify(err)));
     } finally {
       btn.disabled = false;
       btn.textContent = '公開する';
